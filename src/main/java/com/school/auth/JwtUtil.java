@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Map;
 
 @Component
 public class JwtUtil {
@@ -25,10 +26,11 @@ public class JwtUtil {
         this.refreshExpirationMs = refreshExpirationMs;
     }
 
-    public String generateToken(String username, String role) {
+    public String generateToken(User user) {
         return Jwts.builder()
-                .subject(username)
-                .claim("role", role)
+                .subject(user.getUsername())
+                .claim("role", user.getRole())
+                .claim("status",user.getStatus())
                 .claim("type", "access")
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationMs))
@@ -36,10 +38,10 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String generateRefreshToken(String username) {
+    public String generateRefreshToken(User user) {
         return Jwts.builder()
-                .subject(username)
-                .claim("type", "refresh")
+                .subject(user.getUsername())
+                .claims(Map.of("type", "refresh","status",user.getStatus()))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + refreshExpirationMs))
                 .signWith(key)
@@ -51,6 +53,12 @@ public class JwtUtil {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+    }
+    public String getStatusFromToken(String token) {
+        return Jwts.parser().verifyWith(key).build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("status", String.class);
     }
 
     public String getRoleFromToken(String token) {
