@@ -59,7 +59,7 @@ class AuthServiceTest {
         loginRequest.setUsername(USERNAME);
         loginRequest.setPassword(RAW_PASSWORD);
 
-        existingUser = new User(USERNAME, ENCODED_PASSWORD, ROLE, "ACTIVE");
+        existingUser = new User(USERNAME, ENCODED_PASSWORD, ROLE, "ACTIF");
     }
 
     // ------------------------------------------------------------------
@@ -74,8 +74,8 @@ class AuthServiceTest {
         void shouldRegisterUser_whenUsernameDoesNotExist() {
             when(userRepository.existsByUsername(USERNAME)).thenReturn(false);
             when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(ENCODED_PASSWORD);
-            when(jwtUtil.generateToken(USERNAME, ROLE)).thenReturn(ACCESS_TOKEN);
-            when(jwtUtil.generateRefreshToken(USERNAME)).thenReturn(REFRESH_TOKEN);
+            when(jwtUtil.generateToken(any(User.class))).thenReturn(ACCESS_TOKEN);
+            when(jwtUtil.generateRefreshToken(any(User.class))).thenReturn(REFRESH_TOKEN);
 
             AuthResponse response = authService.register(registerRequest);
 
@@ -91,7 +91,7 @@ class AuthServiceTest {
             assertThat(savedUser.getUsername()).isEqualTo(USERNAME);
             assertThat(savedUser.getPassword()).isEqualTo(ENCODED_PASSWORD);
             assertThat(savedUser.getRefreshToken()).isEqualTo(REFRESH_TOKEN);
-            assertThat(savedUser.getEmail()).isEqualTo(USERNAME + "@ecole.fr");
+            assertThat(savedUser.getEmail()).isEqualTo(USERNAME);
             assertThat(savedUser.getCreatedAt()).isNotNull();
         }
 
@@ -101,14 +101,14 @@ class AuthServiceTest {
             registerRequest.setStatus(null);
             when(userRepository.existsByUsername(USERNAME)).thenReturn(false);
             when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(ENCODED_PASSWORD);
-            when(jwtUtil.generateToken(anyString(), anyString())).thenReturn(ACCESS_TOKEN);
-            when(jwtUtil.generateRefreshToken(anyString())).thenReturn(REFRESH_TOKEN);
+            when(jwtUtil.generateToken(any(User.class))).thenReturn(ACCESS_TOKEN);
+            when(jwtUtil.generateRefreshToken(any(User.class))).thenReturn(REFRESH_TOKEN);
 
             authService.register(registerRequest);
 
             ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
             verify(userRepository).save(userCaptor.capture());
-            assertThat(userCaptor.getValue().getStatus()).isEqualTo("ACTIVE");
+            assertThat(userCaptor.getValue().getStatus()).isEqualTo("ACTIF");
         }
 
         @Test
@@ -117,8 +117,8 @@ class AuthServiceTest {
             registerRequest.setStatus("PENDING");
             when(userRepository.existsByUsername(USERNAME)).thenReturn(false);
             when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(ENCODED_PASSWORD);
-            when(jwtUtil.generateToken(anyString(), anyString())).thenReturn(ACCESS_TOKEN);
-            when(jwtUtil.generateRefreshToken(anyString())).thenReturn(REFRESH_TOKEN);
+            when(jwtUtil.generateToken(any(User.class))).thenReturn(ACCESS_TOKEN);
+            when(jwtUtil.generateRefreshToken(any(User.class))).thenReturn(REFRESH_TOKEN);
 
             authService.register(registerRequest);
 
@@ -153,8 +153,8 @@ class AuthServiceTest {
         void shouldReturnTokens_whenCredentialsValidAndAccountActive() {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(existingUser));
             when(passwordEncoder.matches(RAW_PASSWORD, ENCODED_PASSWORD)).thenReturn(true);
-            when(jwtUtil.generateToken(USERNAME, ROLE)).thenReturn(ACCESS_TOKEN);
-            when(jwtUtil.generateRefreshToken(USERNAME)).thenReturn(REFRESH_TOKEN);
+            when(jwtUtil.generateToken(any(User.class))).thenReturn(ACCESS_TOKEN);
+            when(jwtUtil.generateRefreshToken(any(User.class))).thenReturn(REFRESH_TOKEN);
 
             AuthResponse response = authService.login(loginRequest);
 
@@ -222,7 +222,7 @@ class AuthServiceTest {
             when(jwtUtil.isRefreshToken(ACCESS_TOKEN)).thenReturn(false);
             when(jwtUtil.getUsernameFromToken(ACCESS_TOKEN)).thenReturn(USERNAME);
             when(jwtUtil.getRoleFromToken(ACCESS_TOKEN)).thenReturn(ROLE);
-
+            when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(existingUser));  // ← ajouter cette ligne
             AuthResponse response = authService.validateToken(ACCESS_TOKEN);
 
             assertThat(response.getToken()).isNull();
@@ -271,8 +271,8 @@ class AuthServiceTest {
             when(jwtUtil.isRefreshToken(REFRESH_TOKEN)).thenReturn(true);
             when(jwtUtil.getUsernameFromToken(REFRESH_TOKEN)).thenReturn(USERNAME);
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(existingUser));
-            when(jwtUtil.generateToken(USERNAME, ROLE)).thenReturn(newAccessToken);
-            when(jwtUtil.generateRefreshToken(USERNAME)).thenReturn(newRefreshToken);
+            when(jwtUtil.generateToken(any(User.class))).thenReturn(newAccessToken);
+            when(jwtUtil.generateRefreshToken(any(User.class))).thenReturn(newRefreshToken);
 
             AuthResponse response = authService.refreshAccessToken(REFRESH_TOKEN);
 
